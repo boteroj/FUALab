@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FUALab Frontend</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        margin: 0;
+        padding: 2rem;
+        background: #f5f5f5;
+      }
+      .container {
+        max-width: 640px;
+        margin: 0 auto;
+        background: #ffffff;
+        border-radius: 8px;
+        padding: 2rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      }
+      button {
+        background-color: #1f6feb;
+        color: #ffffff;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+      pre {
+        background: #272822;
+        color: #f8f8f2;
+        padding: 1rem;
+        border-radius: 6px;
+        overflow-x: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="container">
+      <h1>FUALab Frontend</h1>
+      <p>This static client fetches the health status from the public API.</p>
+      <button id="fetchButton">Fetch API Health</button>
+      <section>
+        <h2>Latest Response</h2>
+        <pre id="response">No data loaded yet.</pre>
+      </section>
+    </main>
+    <script>
+      const button = document.getElementById("fetchButton");
+      const responseBox = document.getElementById("response");
+
+      async function fetchHealth() {
+        button.disabled = true;
+        responseBox.textContent = "Loading...";
+        try {
+          const res = await fetch("/api/health");
+          if (!res.ok) {
+            throw new Error(`Request failed: ${res.status}`);
+          }
+          const data = await res.json();
+          responseBox.textContent = JSON.stringify(data, null, 2);
+        } catch (error) {
+          responseBox.textContent = `Error: ${error.message}`;
+        } finally {
+          button.disabled = false;
+        }
+      }
+
+      button.addEventListener("click", fetchHealth);
+    </script>
+  </body>
+</html>
+

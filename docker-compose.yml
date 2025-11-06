@@ -1,0 +1,57 @@
+version: "3.11"
+
+services:
+  api:
+    build:
+      context: ./services/api
+    env_file:
+      - .env
+    environment:
+      FUALAB_DATABASE_URL: ${FUALAB_DATABASE_URL:-postgresql+asyncpg://postgres:postgres@db:5432/fualab}
+      FUALAB_REDIS_URL: ${FUALAB_REDIS_URL:-redis://redis:6379/0}
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+
+  worker:
+    build:
+      context: ./services/worker
+    env_file:
+      - .env
+    environment:
+      FUALAB_DATABASE_URL: ${FUALAB_DATABASE_URL:-postgresql://postgres:postgres@db:5432/fualab}
+      FUALAB_REDIS_URL: ${FUALAB_REDIS_URL:-redis://redis:6379/0}
+      FUALAB_HEARTBEAT_INTERVAL_SECONDS: ${FUALAB_HEARTBEAT_INTERVAL_SECONDS:-15}
+    depends_on:
+      - db
+      - redis
+
+  frontend:
+    build:
+      context: ./services/frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-fualab}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+volumes:
+  postgres_data:
+
