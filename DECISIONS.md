@@ -30,3 +30,9 @@
 - **Decision:** Launch containers with `alembic upgrade head && uvicorn ...` so migrations run before serving traffic.
 - **Outcome:** Ensures schema alignment; future work can offload to CI/CD once deployment matures.
 
+## Use of AI-assisted Development (Cursor)
+
+- Development was iterated interactively using Cursor.
+- Prompts guided refactoring, Terraform structuring, and test stabilization.
+- Cursor was used to maintain consistency across commits and ensure fast iteration.
+- Human validation and reasoning were applied before committing each change.
