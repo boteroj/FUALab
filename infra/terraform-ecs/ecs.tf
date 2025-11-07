@@ -67,6 +67,13 @@ resource "aws_security_group" "ecs_api" {
   description = "ECS API tasks"
   vpc_id      = local.vpc_id_effective
 
+  ingress {
+    from_port   = 8000
+    to_port     = 8000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -94,36 +101,6 @@ resource "aws_security_group" "ecs_worker" {
   tags = merge(local.tags, {
     Name = "${local.name_prefix}-worker-sg"
   })
-}
-
-resource "aws_security_group_rule" "api_from_alb" {
-  description              = "Allow ALB to reach API tasks"
-  type                     = "ingress"
-  from_port                = 8000
-  to_port                  = 8000
-  protocol                 = "tcp"
-  security_group_id        = aws_security_group.ecs_api.id
-  source_security_group_id = aws_security_group.alb.id
-}
-
-resource "aws_security_group_rule" "rds_from_api" {
-  description              = "Allow API tasks to reach Postgres"
-  type                     = "ingress"
-  from_port                = 5432
-  to_port                  = 5432
-  protocol                 = "tcp"
-  security_group_id        = aws_security_group.rds.id
-  source_security_group_id = aws_security_group.ecs_api.id
-}
-
-resource "aws_security_group_rule" "rds_from_worker" {
-  description              = "Allow worker tasks to reach Postgres"
-  type                     = "ingress"
-  from_port                = 5432
-  to_port                  = 5432
-  protocol                 = "tcp"
-  security_group_id        = aws_security_group.rds.id
-  source_security_group_id = aws_security_group.ecs_worker.id
 }
 
 resource "aws_ecs_task_definition" "api" {
@@ -225,24 +202,15 @@ resource "aws_ecs_service" "api" {
   desired_count   = var.desired_count_api
   launch_type     = "FARGATE"
   enable_execute_command = true
-  health_check_grace_period_seconds = 60
 
   network_configuration {
-    subnets         = local.private_subnet_ids_effective
+    subnets         = local.public_subnet_ids_effective
     security_groups = [aws_security_group.ecs_api.id]
-    assign_public_ip = false
-  }
-
-  load_balancer {
-    target_group_arn = aws_lb_target_group.api.arn
-    container_name   = "api"
-    container_port   = 8000
+    assign_public_ip = true
   }
 
   deployment_maximum_percent         = 200
   deployment_minimum_healthy_percent = 50
-
-  depends_on = [aws_lb_listener.http]
 
   tags = merge(local.tags, {
     Name = "${local.name_prefix}-api-service"
@@ -258,9 +226,9 @@ resource "aws_ecs_service" "worker" {
   enable_execute_command = true
 
   network_configuration {
-    subnets         = local.private_subnet_ids_effective
+    subnets         = local.public_subnet_ids_effective
     security_groups = [aws_security_group.ecs_worker.id]
-    assign_public_ip = false
+    assign_public_ip = true
   }
 
   deployment_maximum_percent         = 200

@@ -1,13 +1,3 @@
-output "alb_dns_name" {
-  description = "Public DNS name of the API load balancer."
-  value       = aws_lb.api.dns_name
-}
-
-output "rds_endpoint" {
-  description = "Endpoint of the Postgres instance."
-  value       = aws_db_instance.this.address
-}
-
 output "ecs_cluster_name" {
   description = "Name of the ECS cluster."
   value       = aws_ecs_cluster.this.name

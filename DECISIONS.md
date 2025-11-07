@@ -10,10 +10,10 @@
 - **Decision:** Use AWS ECS on Fargate rather than self-managed EC2 hosts.
 - **Outcome:** Serverless compute, automatic patching, lower maintenance burden, predictable pricing.
 
-## Postgres on RDS (db.t4g.micro)
-- **Context:** Persistent relational storage is required; budgets favor a starter tier.
-- **Decision:** Provision Amazon RDS Postgres using `db.t4g.micro`.
-- **Outcome:** Managed backups, automated updates, and a path to scale later while keeping initial costs low.
+## External Postgres Endpoint
+- **Context:** Persistent relational storage is required, but the cost of always-on managed services must be contained.
+- **Decision:** Assume an existing Postgres deployment (for example shared RDS or Aurora provisioned elsewhere) and inject the connection URL via SSM parameters.
+- **Outcome:** Eliminates dedicated database spend in this stack; migrations still run at deploy time to keep schemas aligned.
 
 ## Parameter Storage via AWS SSM
 - **Context:** Services require secrets (database credentials/URL) without hardcoding.

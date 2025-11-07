@@ -8,7 +8,7 @@ FUALab is a multi-service platform composed of a public FastAPI service, a backg
 - `services/worker` — Python async worker responsible for scheduled processing and Redis heartbeats.
 - `services/frontend` — Static client that fetches data from the API.
 - `infra/terraform-lite` — Minimal AWS placeholders.
-- `infra/terraform-ecs` — Production-ready Terraform stack for VPC, ECS, RDS, ALB, and supporting resources.
+- `infra/terraform-ecs` — Cost-conscious Terraform stack for VPC, ECS, SSM parameters, and IAM integrations.
 - `ops/runbooks` — Operational procedures and troubleshooting guides.
 - `ops/decisions` — Architectural decision records.
 - `.github/workflows` — CI/CD automation.
@@ -59,7 +59,7 @@ curl -fsS http://localhost:8000/api/items
 ## Continuous Delivery
 
 - `cd-build.yml`: builds and pushes `services/api` and `services/worker` images to Amazon ECR tagged `main-${GITHUB_SHA}` using GitHub OIDC.
-- `cd-deploy.yml`: triggered after a successful build; assumes the Terraform deployment role, applies the stack in `infra/terraform-ecs` with `dev.tfvars`, captures the ALB DNS, and performs a `/health` smoke test.
+- `cd-deploy.yml`: triggered after a successful build; assumes the Terraform deployment role, applies the stack in `infra/terraform-ecs` with `dev.tfvars`, resolves the public IP of the API task, and performs a `/health` smoke test.
 
 ## Infrastructure Bootstrap
 
@@ -72,12 +72,12 @@ curl -fsS http://localhost:8000/api/items
    terraform plan -var-file=dev.tfvars
    terraform apply -var-file=dev.tfvars
    ```
-4. Terraform creates VPC (or reuses existing when configured), RDS Postgres, ECR repos, ECS cluster/services, ALB, Security Groups, and SSM parameters containing `FUALAB_DATABASE_URL`.
+4. Terraform creates or reuses a VPC, provisions public subnets, ECR repos, ECS cluster/services, security groups, and SSM parameters containing `FUALAB_DATABASE_URL`. Database connectivity is expected to target an existing Postgres endpoint supplied through variables.
 
 ## Smoke Tests
 
 - Local: `curl -fsS http://localhost:8000/health`
-- After deployment: `curl -fsS http://<alb_dns_name>/health`
+- After deployment: retrieve the API task public IP via `aws ecs list-tasks`/`describe-tasks`, then `curl -fsS http://<public_ip>:8000/health`
 - Worker heartbeat: check Redis key `fualab:worker:heartbeat` using the runbook in `ops/runbooks/worker-heartbeat.md`.
 
 ## Deliverables Checklist
@@ -88,7 +88,7 @@ curl -fsS http://localhost:8000/api/items
 - [x] Alembic migrations and Docker entrypoint applying `upgrade head`
 - [x] Pytest suite covering health and item flows using SQLite in CI
 - [x] CI/CD pipelines (build, deploy) using GitHub Actions with OIDC
-- [x] Terraform IaC for AWS: VPC, ECR, RDS, ECS (API + worker), ALB, SSM, security, and GitHub OIDC role
+- [x] Terraform IaC for AWS: VPC, ECR, ECS (API + worker), SSM, security, and GitHub OIDC role
 - [x] Runbooks and ADR documenting operations and decisions
 
 ## Development Notes

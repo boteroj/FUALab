@@ -7,11 +7,9 @@ resource "aws_ssm_parameter" "database_url" {
   description = "Database connection string for ${var.environment}"
   type        = "SecureString"
   value       = format(
-    "postgresql://%s:%s@%s:%s/%s",
+    "postgresql://%s:%s@localhost:5432/%s",
     var.db_username,
     var.db_password,
-    aws_db_instance.this.address,
-    aws_db_instance.this.port,
     var.db_name,
   )
   overwrite = true

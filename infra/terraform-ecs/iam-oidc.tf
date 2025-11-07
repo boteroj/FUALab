@@ -50,8 +50,8 @@ data "aws_iam_policy_document" "github_actions" {
     actions = ["ecs:*"]
     resources = [
       aws_ecs_cluster.this.arn,
-      aws_ecs_service.api.arn,
-      aws_ecs_service.worker.arn
+      aws_ecs_service.api.id,
+      aws_ecs_service.worker.id
     ]
   }
 
@@ -76,7 +76,12 @@ data "aws_iam_policy_document" "github_actions" {
 
   statement {
     actions   = ["rds:Describe*"]
-    resources = [aws_db_instance.this.arn]
+    resources = ["*"]
+  }
+
+  statement {
+    actions   = ["ec2:DescribeNetworkInterfaces"]
+    resources = ["*"]
   }
 
   statement {

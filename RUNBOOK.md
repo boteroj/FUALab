@@ -16,11 +16,11 @@
 ## Logs and Monitoring
 - API logs: CloudWatch log group `/aws/ecs/<env>-api`.
 - Worker logs: CloudWatch log group `/aws/ecs/<env>-worker`.
-- Postgres monitoring: RDS performance insights when enabled; basic metrics in CloudWatch.
+- Postgres monitoring: rely on the upstream managed database dashboards (for example shared RDS) and CloudWatch metrics when available.
 
 ## Common Issues
-- **Failed smoke test**: Validate ALB target health and ensure migrations succeeded (`alembic` logs in CloudWatch).
-- **Database connectivity errors**: Confirm SSM parameter values and RDS security group rules.
+- **Failed smoke test**: Confirm an API task is running with a public IP and that `/health` responds (check `alembic` output in CloudWatch logs).
+- **Database connectivity errors**: Confirm SSM parameter values and verify the upstream database allows connections from the ECS task public IPs.
 - **Worker heartbeat missing**: Use `ops/runbooks/worker-heartbeat.md` to check Redis and container health.
 
 ## Database Migration Notes
