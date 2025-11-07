@@ -113,3 +113,8 @@ Several key observations emerged during development:
 - **Documentation First:** Each architectural decision was documented in `DECISIONS.md` and `RUNBOOK.md` as it was made, ensuring that the reasoning behind the system remains traceable and maintainable.
 
 AI-assisted development worked best when used as a collaborator: proposing structures, surfacing alternatives, and refining solutions incrementally based on real execution results.
+
+## Live Demo (temporary)
+Public demo (EC2): http://52.54.146.36:8081/  
+Note: this IP is temporary and may change. The frontend proxies `/api/*` to the FastAPI service.
+EOF
