@@ -1,55 +1,60 @@
 import os
-from logging.config import fileConfig
-
+import sys
 from alembic import context
 from sqlalchemy import engine_from_config, pool
+from pathlib import Path
 
-from app import models
+# We are at /app/app/migrations/env.py
+# We need /app in sys.path so that "import app.*" works.
+PROJECT_ROOT = Path(__file__).resolve().parents[2]  # -> /app
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+# Now these imports work
+from app.database import Base  # noqa: E402
+from app import models         # noqa: F401,E402  (ensure models are registered)
 
 config = context.config
 
-if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
-
-def get_database_url() -> str:
+def get_url() -> str:
     return os.getenv("FUALAB_DATABASE_URL", "postgresql://postgres:postgres@db:5432/fualab")
 
-config.set_main_option("sqlalchemy.url", get_database_url())
+target_metadata = Base.metadata
 
-target_metadata = models.Base.metadata
-
-def run_migrations_offline() -> None:
-    url = config.get_main_option("sqlalchemy.url")
+def run_migrations_offline():
+    url = get_url()
     context.configure(
         url=url,
         target_metadata=target_metadata,
         literal_binds=True,
-        dialect_opts={"paramstyle": "named"},
+        compare_type=True,
+        compare_server_default=True,
     )
-
     with context.begin_transaction():
         context.run_migrations()
 
+def run_migrations_online():
+    cfg_section = config.get_section(config.config_ini_section) or {}
+    cfg_section["sqlalchemy.url"] = get_url()
 
-def run_migrations_online() -> None:
     connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
+        cfg_section,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
+        future=True,
     )
 
     with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
-
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+            compare_type=True,
+            compare_server_default=True,
+        )
         with context.begin_transaction():
             context.run_migrations()
 
-
-def run_migrations() -> None:
-    if context.is_offline_mode():
-        run_migrations_offline()
-    else:
-        run_migrations_online()
-
-
-run_migrations()
+if context.is_offline_mode():
+    run_migrations_offline()
+else:
+    run_migrations_online()
