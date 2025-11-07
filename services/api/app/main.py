@@ -1,7 +1,7 @@
 from datetime import datetime
 from functools import lru_cache
 
-from fastapi import Depends, FastAPI, status
+from fastapi import FastAPI, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic_settings import BaseSettings
 from sqlalchemy.orm import Session
@@ -43,36 +43,37 @@ app = FastAPI(title=settings.service_name)
 
 @app.on_event("startup")
 def on_startup() -> None:
+    # Keep metadata creation until Alembic migrations are fully adopted.
     Base.metadata.create_all(bind=engine)
 
 
 @app.get("/health", tags=["Health"])
 async def healthcheck() -> dict[str, str]:
-    return {
-        "status": "ok",
-        "service": settings.service_name,
-    }
+    return {"status": "ok", "service": settings.service_name}
 
 
 @app.get("/api/health", tags=["Health"])
 async def api_healthcheck() -> dict[str, str]:
-    return {
-        "status": "ok",
-        "service": settings.service_name,
-    }
+    return {"status": "ok", "service": settings.service_name}
 
 
-@app.get("/api/items", response_model=list[ItemOut])
+@app.get("/api/items", response_model=list[ItemOut], tags=["Items"])
 def list_items(db: Session = Depends(get_db)) -> list[Item]:
-    items = db.query(Item).order_by(Item.id).all()
-    return items
+    return db.query(Item).order_by(Item.id).all()
 
 
-@app.post("/api/items", response_model=ItemOut, status_code=status.HTTP_201_CREATED)
+@app.get("/api/items/{item_id}", response_model=ItemOut, tags=["Items"])
+def get_item(item_id: int, db: Session = Depends(get_db)) -> Item:
+    obj = db.get(Item, item_id)
+    if not obj:
+        raise HTTPException(status_code=404, detail="Item not found")
+    return obj
+
+
+@app.post("/api/items", response_model=ItemOut, status_code=status.HTTP_201_CREATED, tags=["Items"])
 def create_item(payload: ItemIn, db: Session = Depends(get_db)) -> Item:
     item = Item(name=payload.name)
     db.add(item)
     db.commit()
     db.refresh(item)
     return item
-

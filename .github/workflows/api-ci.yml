@@ -9,6 +9,8 @@ on:
 jobs:
   api-tests:
     runs-on: ubuntu-latest
+    env:
+      FUALAB_DATABASE_URL: sqlite:///./tests_api.db
 
     steps:
       - uses: actions/checkout@v4

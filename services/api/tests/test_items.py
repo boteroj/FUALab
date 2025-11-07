@@ -1,3 +1,4 @@
+import os
 from collections.abc import Generator
 
 import pytest
@@ -9,7 +10,7 @@ from app.database import Base, get_db
 from app.main import app
 
 
-TEST_DATABASE_URL = "sqlite:///./tests_api.db"
+TEST_DATABASE_URL = os.getenv("FUALAB_DATABASE_URL", "sqlite:///./tests_api.db")
 
 
 engine = create_engine(TEST_DATABASE_URL, connect_args={"check_same_thread": False})
