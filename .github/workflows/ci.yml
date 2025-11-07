@@ -1,4 +1,19 @@
 name: CI
+      - name: Prepare .env for Docker Compose
+        run: |
+          # Si existe ejemplo, úsalo
+          if [ -f .env.example ]; then
+            cp .env.example .env
+          else
+            # Crea uno mínimo para CI
+            cat > .env <<'EOF'
+FUALAB_DATABASE_URL=postgresql://postgres:postgres@db:5432/fualab
+FUALAB_HEARTBEAT_INTERVAL_SECONDS=15
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_DB=fualab
+EOF
+          fi
 
 on:
   push:
