@@ -117,4 +117,36 @@ AI-assisted development worked best when used as a collaborator: proposing struc
 ## Live Demo (temporary)
 Public demo (EC2): http://52.54.146.36:8081/  
 Note: this IP is temporary and may change. The frontend proxies `/api/*` to the FastAPI service.
+
+## Learnings — AI-Assisted Development
+
+This project was built iteratively using AI-assisted tools (Cursor gpt5-codex and ChatGPT/GPT-5). Key takeaways:
+
+- **Effective prompting is iterative**: short, specific prompts worked better than long ones. Example:
+  - ✅ “Add GET /api/items/{id}, returning 404 if not found (FastAPI + SQLAlchemy 2.0).”
+  - ❌ “Improve the API.”
+
+- **Cursor was used for code-aware refactoring**:
+  - Adding Alembic migrations and wiring `env.py` correctly required multi-step suggestions.
+  - Cursor’s inline diff preview helped validate structural changes before committing.
+
+- **CI reliability required switching from Postgres → SQLite in tests**:
+  - Early test runs failed because the CI environment lacked Postgres.
+  - Running tests with `FUALAB_DATABASE_URL=sqlite:///./tests_api.db` allowed a lightweight, reproducible test pipeline.
+
+- **Infrastructure iteration required reasoning + guardrails**:
+  - Initial Terraform included NAT Gateway + RDS, which increases AWS cost.
+  - Iteration with AI reduced the stack to a cost-aware VPC + ECS + SSM design suitable for demos and interviews.
+
+- **Errors were part of the workflow**:
+  - Mis-pasted code during SSH edits caused module import errors.
+  - The fix was to apply changes using Cursor project-wide operations instead of terminal copy/paste.
+
+- **Commit history reflects iterative refinement**:
+  - Each feature and fix was committed separately (`feat`, `fix`, `chore`, `docs`), enabling clear traceability.
+
+Overall, AI-assisted development accelerated iteration and helped maintain consistent architectural direction, while human review ensured correctness, alignment to constraints, and cost-awareness.
+
 EOF
+
+
