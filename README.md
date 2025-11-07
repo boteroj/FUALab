@@ -101,3 +101,15 @@ curl -fsS http://localhost:8000/api/items
 
 This project is provided as-is for demonstration and internal development purposes.
 
+## Learnings from AI-Assisted Development
+
+This project was built using an iterative workflow assisted by AI tools, primarily Cursor.  
+Several key observations emerged during development:
+
+- **Rapid Iteration:** Using AI suggestions accelerated the implementation of FastAPI, SQLAlchemy, Alembic, and ECS-related Terraform by providing structured boilerplate and guided corrections.
+- **Feedback Through CI:** Test failures (especially those involving database URLs and Alembic migrations) acted as precise feedback loops. We used AI to interpret error traces and apply targeted fixes without overcorrecting the design.
+- **Refinement of Infrastructure:** Initial Terraform included high-cost resources (NAT Gateway, private subnets, ALB). Through iteration and guided reasoning, the design was reduced to public ECS tasks with SSM parameters, decreasing operational cost while meeting functional requirements.
+- **Separation of Environments:** AI assistance helped enforce clear separation between local development (Docker Compose + Postgres), CI execution (SQLite), and AWS tasks (SSM-injected database URLs).
+- **Documentation First:** Each architectural decision was documented in `DECISIONS.md` and `RUNBOOK.md` as it was made, ensuring that the reasoning behind the system remains traceable and maintainable.
+
+AI-assisted development worked best when used as a collaborator: proposing structures, surfacing alternatives, and refining solutions incrementally based on real execution results.
