@@ -7,30 +7,95 @@ FUALab is a multi-service platform composed of a public FastAPI service, a backg
 - `services/api` — FastAPI application that exposes the public HTTP interface.
 - `services/worker` — Python async worker responsible for scheduled processing and Redis heartbeats.
 - `services/frontend` — Static client that fetches data from the API.
-- `infra/terraform-lite` — AWS infrastructure scaffolding for ECR and ECS.
+- `infra/terraform-lite` — Minimal AWS placeholders.
+- `infra/terraform-ecs` — Production-ready Terraform stack for VPC, ECS, RDS, ALB, and supporting resources.
 - `ops/runbooks` — Operational procedures and troubleshooting guides.
 - `ops/decisions` — Architectural decision records.
-- `.github/workflows` — CI/CD pipelines.
+- `.github/workflows` — CI/CD automation.
 
-## Getting Started
+## Prerequisites
 
-1. Copy `.env.example` to `.env` and adjust any values as needed.
-2. Build and run the stack: `docker compose up --build`.
-3. Access the services:
-   - API: http://localhost:8000/docs
-   - Frontend: http://localhost:8080
-   - Postgres: localhost:5432 (default credentials in `.env.example`)
-   - Redis: localhost:6379
+- Docker 24+
+- Docker Compose v2
+- Python 3.11 (optional for running linters/tests without containers)
+- Terraform 1.6+ (for infrastructure provisioning)
+- AWS CLI v2 configured with credentials that can assume the deployment role
+
+## Local Development
+
+1. Copy `.env.example` to `.env` and adjust values as needed.
+2. Start the full stack: `docker compose up -d --build`.
+3. Inspect logs when needed: `docker compose logs -f api worker`.
+4. Stop the environment: `docker compose down -v`.
+
+### Service Endpoints
+
+- API Docs: http://localhost:8000/docs
+- Frontend: http://localhost:8080
+- Postgres: localhost:5432 (defaults from `.env.example`)
+- Redis: localhost:6379
+
+## Sample API Calls
+
+```bash
+# Health
+curl -fsS http://localhost:8000/health
+
+# Create an item
+curl -fsS -X POST http://localhost:8000/api/items \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Sample"}'
+
+# List items
+curl -fsS http://localhost:8000/api/items
+```
+
+## Continuous Integration
+
+- `api-ci.yml` runs on pushes/PRs to `main`.
+- Tests execute with SQLite by overriding `FUALAB_DATABASE_URL` so no external services are required.
+- Linting and build validation are covered by `ci.yml`.
+
+## Continuous Delivery
+
+- `cd-build.yml`: builds and pushes `services/api` and `services/worker` images to Amazon ECR tagged `main-${GITHUB_SHA}` using GitHub OIDC.
+- `cd-deploy.yml`: triggered after a successful build; assumes the Terraform deployment role, applies the stack in `infra/terraform-ecs` with `dev.tfvars`, captures the ALB DNS, and performs a `/health` smoke test.
+
+## Infrastructure Bootstrap
+
+1. Configure AWS credentials and export `AWS_ROLE_TO_ASSUME`, `AWS_ACCOUNT_ID`, and `AWS_REGION` secrets in GitHub.
+2. Review and edit `infra/terraform-ecs/dev.tfvars` with environment-specific values.
+3. For manual provisioning:
+   ```bash
+   cd infra/terraform-ecs
+   terraform init
+   terraform plan -var-file=dev.tfvars
+   terraform apply -var-file=dev.tfvars
+   ```
+4. Terraform creates VPC (or reuses existing when configured), RDS Postgres, ECR repos, ECS cluster/services, ALB, Security Groups, and SSM parameters containing `FUALAB_DATABASE_URL`.
+
+## Smoke Tests
+
+- Local: `curl -fsS http://localhost:8000/health`
+- After deployment: `curl -fsS http://<alb_dns_name>/health`
+- Worker heartbeat: check Redis key `fualab:worker:heartbeat` using the runbook in `ops/runbooks/worker-heartbeat.md`.
+
+## Deliverables Checklist
+
+- [x] Multi-service monorepo (`api`, `worker`, `frontend`) sharing Postgres and Redis
+- [x] Docker Compose for local development with `.env.example`
+- [x] Persistent `/api/items` endpoints backed by Postgres via SQLAlchemy 2.0 and Pydantic v2
+- [x] Alembic migrations and Docker entrypoint applying `upgrade head`
+- [x] Pytest suite covering health and item flows using SQLite in CI
+- [x] CI/CD pipelines (build, deploy) using GitHub Actions with OIDC
+- [x] Terraform IaC for AWS: VPC, ECR, RDS, ECS (API + worker), ALB, SSM, security, and GitHub OIDC role
+- [x] Runbooks and ADR documenting operations and decisions
 
 ## Development Notes
 
 - The worker emits a heartbeat to Redis on the key `fualab:worker:heartbeat`.
-- FastAPI configuration and worker connections derive from environment variables with the `FUALAB_` prefix.
-- Terraform configuration is intentionally minimal and should be extended per environment.
-
-## CI/CD
-
-GitHub Actions workflow definitions live in `.github/workflows`. They cover linting and build checks for an initial pipeline and are intended to be expanded during implementation.
+- FastAPI configuration and worker connections derive from environment variables prefixed with `FUALAB_`.
+- Terraform modules are kept inline for clarity; refactor into reusable modules as requirements grow.
 
 ## License
 

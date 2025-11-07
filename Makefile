@@ -24,3 +24,33 @@ terraform-init:  # Initialize Terraform configuration
 terraform-plan: terraform-init  # Create Terraform plan
 	cd infra/terraform-lite && terraform plan
 
+
+########################################
+# Docker / Local Dev Shortcuts
+########################################
+
+up:
+	docker compose up -d
+
+down:
+	docker compose down
+
+logs:
+	docker compose logs -f --tail=150
+
+rebuild-api:
+	docker compose build --no-cache api && docker compose up -d api && docker compose logs -f api --tail=120
+
+########################################
+# Alembic / Database Migrations
+########################################
+
+migrate-current:
+	docker compose exec api alembic current
+
+migrate-upgrade:
+	docker compose exec api alembic upgrade head
+
+migrate-revision:
+	@if [ -z "$(m)" ]; then echo "Usage: make migrate-revision m=\"add description column\""; exit 1; fi
+	docker compose exec api alembic revision -m "$(m)"
